@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb-deployment
+  labels:
+    app: nextcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:latest
+        env:
+          - name: MYSQL_DATABASE
+            value: db
+        envFrom:
+          - secretRef:
+              name: nextcloud-db-secret
+        volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: db-storage
+            subPath: mysql-data
+        ports:
+        - containerPort: 3306
+      volumes:
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: ps-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb-service
+  labels:
+    app: nextcloud
+spec:
+  selector:
+    app: mariadb
+  ports:
+  - port: 3306
